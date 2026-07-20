@@ -110,7 +110,7 @@ do
   vim.o.number = true
   -- You can also add relative line numbers, to help with jumping.
   --  Experiment for yourself to see if you like it!
-  -- vim.o.relativenumber = true
+  vim.o.relativenumber = true
 
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
@@ -692,18 +692,48 @@ do
   --  See `:help lsp-config` for information about keys and how to configure
   ---@type table<string, vim.lsp.Config>
   local servers = {
-    -- clangd = {},
-    -- gopls = {},
-    -- pyright = {},
-    -- rust_analyzer = {},
+    clangd = {},
+    gopls = {},
+    basedpyright = {
+      settings = {
+        basedpyright = {
+          disableOrganizeImports = true,
+          analysis = {
+            autoSearchPaths = true,
+            diagnosticMode = 'openFilesOnly',
+            diagnosticSeverityOverrides = {
+              reportDuplicateImport = 'none',
+              reportUnusedFunction = 'none',
+              reportUnusedImport = 'none',
+              reportUnusedParameter = 'none',
+              reportUnusedVariable = 'none',
+            },
+          },
+        },
+      },
+    },
+    rust_analyzer = {},
+    ruff = {
+      init_options = {
+        settings = {
+          format = {
+            enable = true,
+          },
+          lint = {
+            enable = true,
+          },
+        },
+      },
+    },
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
+    ts_ls = {},
 
     stylua = {}, -- Used to format Lua code
+    markdownlint = {},
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -777,20 +807,36 @@ end
 do
   -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
+
+  local no_organize_imports_root = vim.fs.normalize '/home/vitor/Work/forks/authfy-mfao/docker/engine'
+  local function should_skip_organize_imports(bufnr)
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    if name == '' then
+      return false
+    end
+
+    local path = vim.fs.normalize(vim.loop.fs_realpath(name) or name)
+    return path == no_organize_imports_root or vim.startswith(path, no_organize_imports_root .. '/')
+  end
+
+
   require('conform').setup {
     notify_on_error = false,
-    format_on_save = function(bufnr)
-      -- You can specify filetypes to autoformat on save here:
-      local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
-      }
-      if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
-      else
-        return nil
-      end
-    end,
+    -- format_on_save = function(bufnr)
+    --   if should_skip_organize_imports(bufnr) then
+    --     return nil
+    --   end
+    --   -- You can specify filetypes to autoformat on save here:
+    --   local enabled_filetypes = {
+    --     -- lua = true,
+    --     python = true,
+    --   }
+    --   if enabled_filetypes[vim.bo[bufnr].filetype] then
+    --     return { timeout_ms = 500 }
+    --   else
+    --     return nil
+    --   end
+    -- end,
     default_format_opts = {
       lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
     },
@@ -798,7 +844,13 @@ do
     formatters_by_ft = {
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
+      python = function(bufnr)
+        if should_skip_organize_imports(bufnr) then
+          return { 'ruff_format' }
+        end
+
+        return { 'ruff_organize_imports', 'ruff_format' }
+      end,
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
       -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -966,12 +1018,12 @@ do
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug'
-  -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
-  -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
+  require 'kickstart.plugins.debug'
+  require 'kickstart.plugins.indent_line'
+  require 'kickstart.plugins.lint'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
