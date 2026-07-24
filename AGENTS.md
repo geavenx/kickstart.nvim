@@ -74,8 +74,8 @@ Apply these conventions when creating or reorganizing this configuration:
 - Keep `init.lua` as a small, deterministic composition root. Set
   `mapleader` and `maplocalleader` before loading mappings or plugins, then
   explicitly load core settings and feature modules in dependency order.
-- Put project-owned modules under a distinctive `lua/vitor/` namespace to
-  avoid collisions with modules elsewhere on `runtimepath`.
+- Put project-owned modules under `lua/core/` and `lua/plugins/`. This project
+  intentionally does not add a personal namespace beneath `lua/`.
 - Organize modules by cohesive responsibility or user-facing feature, such as
   `core/options.lua`, `core/keymaps.lua`, `plugins/lsp.lua`, and
   `plugins/navigation.lua`. Do not split code into one-function files merely
